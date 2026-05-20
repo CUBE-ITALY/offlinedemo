@@ -43,7 +43,7 @@ self.addEventListener("install", (event) => {
             await Promise.all(
                 PRE_CACHE.map((url) =>
                     cache.add(url).catch((err) => {
-                        console.warn("[SW] pre-cache fallito per", url, err.message);
+                        console.error("[SW] pre-cache FALLITO per", url, err.message);
                     })
                 )
             );
@@ -89,6 +89,13 @@ self.addEventListener("fetch", (event) => {
 
     if (url.pathname.includes("/resources/")) {
         event.respondWith(cacheFirst(request));
+        return;
+    }
+
+    if (url.pathname.endsWith(".wav") ||
+        url.pathname.endsWith(".mp3") ||
+        url.pathname.endsWith(".ogg")) {
+        event.respondWith(cacheFirst(new Request(event.request.url)));
         return;
     }
 
@@ -144,14 +151,28 @@ async function navigationHandler(request) {
 }
 
 async function cacheFirst(request) {
-    const cached = await caches.match(request, { ignoreSearch: true });
-    if (cached) return cached;
+    // Per richieste audio con Range header, cerca la risposta completa
+    // e costruisci una risposta parziale manualmente
+    const isRange = request.headers.has("Range");
+    const cacheKey = isRange ? new Request(request.url) : request;
+
+    const cached = await caches.match(cacheKey, { ignoreSearch: true });
+
+    if (cached) {
+        if (isRange) {
+            // Restituisci l'intero body come 200: i browser accettano
+            // una risposta 200 anche quando si aspettano una 206
+            return cached;
+        }
+        return cached;
+    }
 
     try {
         const response = await fetch(request);
         if (response && response.ok && response.type === "basic") {
             const cache = await caches.open(CACHE_NAME);
-            cache.put(request, response.clone());
+            // Salva sempre la risposta completa (non la range response)
+            cache.put(new Request(request.url), response.clone());
         }
         return response;
     } catch (err) {
