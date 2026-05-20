@@ -416,7 +416,7 @@ sap.ui.define([
                 req.onsuccess = () => resolve();
                 req.onerror   = (e) => reject(new Error(e.target.error));
             });
-        }
+        },
 
     });
 });
