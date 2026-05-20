@@ -16,8 +16,7 @@ sap.ui.define([
         SENT:    { key: "sent",    label: "Inviato",        state: "Success" },
         SYNCED:  { key: "synced",  label: "Sincronizzato ed Inviato",  state: "Success" }
     };
-
-    const PROBE_PATH    = "manifest.json";   
+  
     const PROBE_TIMEOUT = 3000;              
 
     return Controller.extend("offlinedemo.controller.OfflineDemo", {
@@ -64,7 +63,7 @@ sap.ui.define([
             }
 
            
-            const sUrl = PROBE_PATH + "?_probe=" + Date.now();
+            const sUrl = sap.ui.require.toUrl("offlinedemo/manifest.json") + "?_probe=" + Date.now();
 
             const ctrl = new AbortController();
             const tid  = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT);
