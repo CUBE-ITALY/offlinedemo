@@ -159,8 +159,10 @@ sap.ui.define([
 
                     if (this._bOnline) {
                         MessageToast.show("Ordine " + oOrder.orderId + " registrato");
+                        this._playNotification("sent"); // trigger notifica
                     } else {
                         MessageToast.show("Ordine salvato localmente — verrà sincronizzato al rientro");
+                        this._playNotification("pending"); // trigger notifica
                     }
                 }).catch((err) => {
                     if (err.name === "ConstraintError" || /constraint/i.test(err.message)) {
@@ -213,6 +215,7 @@ sap.ui.define([
                                 );
                             } else {
                                 MessageToast.show(aOk.length + " ordini sincronizzati");
+                                this._playNotification("synced"); // trigger notifica
                             }
                         });
                     });
@@ -416,7 +419,29 @@ sap.ui.define([
                 req.onsuccess = () => resolve();
                 req.onerror   = (e) => reject(new Error(e.target.error));
             });
-        }
+        },
+
+        // AUDIO PLAYBACK
+        _playNotification(sAlertType) {
+            const mSounds = {
+                sent:    "offlinedemo/media/sounds/Chord2.wav",
+                pending: "offlinedemo/media/sounds/Cloud.wav",
+                synced:  "offlinedemo/media/sounds/Chord2_Rev.wav",
+                error:   "offlinedemo/media/sounds/Chord2.wav"
+            };
+
+            const sKey = mSounds[sAlertType];
+            if (!sKey) {
+                console.warn("[Audio] Tipo notifica sconosciuto:", sAlertType);
+                return;
+            }
+
+            const sSrc = sap.ui.require.toUrl(sKey);
+            const audio = new Audio(sSrc);
+            audio.play().catch((err) => {
+                console.warn("[Audio] Riproduzione bloccata:", err.message);
+            });
+        },
 
     });
 });

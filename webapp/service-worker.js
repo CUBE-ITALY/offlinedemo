@@ -20,7 +20,11 @@ const APP_PRE_CACHE = [
     "./view/OfflineDemo.view.xml",
     "./model/models.js",
     "./i18n/i18n.properties",
-    "./css/style.css"
+    "./css/style.css",
+    // suoni sorgente per notifica audio
+    "./media/sounds/Chord2.wav",
+    "./media/sounds/Chord2_Rev.wav",
+    "./media/sounds/Cloud.wav"
 ];
 
 function toRelative(path) {
@@ -107,7 +111,9 @@ function isAppAsset(pathname) {
         pathname.endsWith("/models.js") ||
         pathname.endsWith("/i18n.properties") ||
         pathname.endsWith("/style.css") ||
-        pathname.endsWith("/sw-ui5-manifest.js")
+        pathname.endsWith("/sw-ui5-manifest.js") ||
+        // inclusione formato audio
+        pathname.endsWith(".wav")
     );
 }
 
