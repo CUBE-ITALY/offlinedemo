@@ -1,0 +1,116 @@
+<mvc:View
+    controllerName="offlinedemo.controller.OfflineDemo"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:l="sap.ui.layout"
+    xmlns:f="sap.ui.layout.form">
+
+    <Page id="page" title="Demo Ordini Offline" showNavButton="false">
+
+        <customHeader>
+            <Bar id="pageBar">
+                <contentMiddle>
+                    <Title id="pageTitle" text="Demo Ordini Offline"/>
+                </contentMiddle>
+                <contentRight>
+                    <ObjectStatus
+                        id="networkStatus"
+                        text="Online"
+                        state="Success"
+                        icon="sap-icon://connected"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+
+        <content>
+            <VBox id="mainVBox" class="sapUiMediumMargin">
+
+                <Panel id="panelForm" headerText="Inserimento Ordine" expandable="false">
+                    <content>
+                        <f:SimpleForm
+                            id="orderForm"
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="4" labelSpanL="4"
+                            labelSpanM="12" labelSpanS="12"
+                            columnsXL="1" columnsL="1" columnsM="1">
+                            <f:content>
+                                <Label id="labelOrderId" text="Numero Ordine" required="true"/>
+                                <Input id="inputOrderId" placeholder="es. ORD-001"/>
+
+                                <Label id="labelRecipient" text="Destinatario" required="true"/>
+                                <Input id="inputRecipient" placeholder="Nome e cognome"/>
+
+                                <Label id="labelAddress" text="Indirizzo" required="true"/>
+                                <Input id="inputAddress" placeholder="Via, numero, città"/>
+
+                                <Label id="labelNotes" text="Note"/>
+                                <TextArea id="inputNotes" rows="3" placeholder="Informazioni aggiuntive"/>
+                            </f:content>
+                        </f:SimpleForm>
+                    </content>
+                </Panel>
+
+                <Button
+                    id="btnSubmit"
+                    text="Registra Ordine"
+                    type="Emphasized"
+                    press="onSubmitOrder"
+                    class="sapUiSmallMarginTop sapUiSmallMarginBottom"/>
+
+                <Panel
+                    id="panelQueue"
+                    headerText="Ordini in attesa di sincronizzazione"
+                    visible="false">
+                    <content>
+                        <VBox id="queueVBox" class="sapUiSmallMargin">
+                            <ObjectStatus
+                                id="queueCount"
+                                text="0 ordini in coda"
+                                state="Warning"
+                                icon="sap-icon://pending"/>
+                            <Button
+                                id="btnSync"
+                                text="Sincronizza ora"
+                                type="Default"
+                                icon="sap-icon://synchronize"
+                                press="onSyncQueue"
+                                class="sapUiSmallMarginTop"/>
+                        </VBox>
+                    </content>
+                </Panel>
+
+                <Panel id="panelList" headerText="Ordini registrati" expandable="true" expanded="true">
+                    <headerToolbar>
+                        <Toolbar id="listToolbar">
+                            <Title id="listTitle" text="Ordini registrati"/>
+                            <ToolbarSpacer id="listSpacer"/>
+                            <Button
+                                id="btnClearHistory"
+                                text="Pulisci storico"
+                                icon="sap-icon://clear-all"
+                                type="Transparent"
+                                press="onClearHistory"
+                                tooltip="Rimuove gli ordini inviati e sincronizzati. Mantiene quelli in attesa."/>
+                        </Toolbar>
+                    </headerToolbar>
+                    <content>
+                        <List
+                            id="orderList"
+                            items="{ordine>/orders}"
+                            noDataText="Nessun ordine registrato"
+                            mode="None">
+                            <StandardListItem
+                                id="orderListItem"
+                                title="{ordine>orderId}"
+                                description="{ordine>recipient}"
+                                info="{ordine>statusLabel}"
+                                infoState="{ordine>statusState}"/>
+                        </List>
+                    </content>
+                </Panel>
+
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>
