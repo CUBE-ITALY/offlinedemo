@@ -21,14 +21,14 @@ const DIST_OUT      = path.join(DIST_DIR, 'sw-ui5-manifest.js');
 
 // Pattern dei bundle essenziali. Aggiungi qui se servono altre lib.
 const SELECTIVE = [
-    /^\/resources\/sap-ui-core\.js$/,
-    /^\/resources\/sap-ui-core-preload\.js$/,
+    /^\/resources\/sap-ui-core(-preload)?\.js$/,
     /\/library-preload\.js$/,
     /\/library-preload\.json$/,
-    /\/themes\/[\w-]+\/library\.css$/,
+    /\/themes\/[\w-]+\/library(-RTL)?\.css$/,
     /\/themes\/[\w-]+\/library-parameters\.json$/,
-    // ResourceBundle e i18n di base, utili offline
-    /\/messagebundle.*\.properties$/
+    /\/themes\/[\w-]+\/.*\.(woff2?|ttf)$/,
+    /\/messagebundle.*\.properties$/,
+    /\/i18n.*\.properties$/
 ];
 
 function scanDist(dir, baseDir) {
@@ -91,11 +91,22 @@ function generateFromConfig() {
     return { files, source: `ui5-local.yaml (tema: ${theme})` };
 }
 
+// ─── MODALITÀ C: CDN → manifest vuoto, la cache avviene dinamicamente dal SW ──
+
+function generateEmpty() {
+    console.log('[sw-manifest] CDN mode — manifest vuoto, SAPUI5 sarà cachato dinamicamente dal SW');
+    return { files: [], source: 'CDN mode (cache dinamica)' };
+}
+
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
+
+const isCDN = process.argv.includes('--cdn');
 
 let ui5Files, source;
 
-if (fs.existsSync(RESOURCES_DIR)) {
+if (isCDN) {
+    ({ files: ui5Files, source } = generateEmpty());
+} else if (fs.existsSync(RESOURCES_DIR)) {
     ui5Files = scanDist(RESOURCES_DIR, DIST_DIR);
     source   = 'dist/resources/ (build produzione)';
 } else {

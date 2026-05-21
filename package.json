@@ -8,11 +8,16 @@
     "sapui5"
   ],
   "main": "webapp/index.html",
-  "dependencies": {},
+  "dependencies": {
+    "@capacitor/android": "8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/network": "^8.0.1"
+  },
   "devDependencies": {
-    "@ui5/cli": "^4.0.33",
-    "@sap/ux-ui5-tooling": "1",
     "@sap-ux/eslint-plugin-fiori-tools": "^10.0.0",
+    "@sap/ux-ui5-tooling": "1",
+    "@ui5/cli": "^4.0.33",
     "eslint": "^10"
   },
   "scripts": {
@@ -26,7 +31,9 @@
     "start-noflp": "fiori run --open \"/index.html?sap-ui-xx-viewCache=false\"",
     "int-test": "fiori run --open \"test/integration/opaTests.qunit.html\"",
     "start-variants-management": "fiori run --open \"/preview.html#app-preview\"",
-    "unit-test": "fiori run --open \"test/unit/unitTests.qunit.html\""
+    "unit-test": "fiori run --open \"test/unit/unitTests.qunit.html\"",
+    "build-webnative": "ui5 build --config=ui5-local.yaml --all --clean-dest --dest dist && node scripts/generate-sw-manifest.js",
+    "build-webnative-cdn": "ui5 build --config=ui5.yaml --clean-dest --dest dist && node scripts/generate-sw-manifest.js --cdn"
   },
   "sapuxLayer": "CUSTOMER_BASE"
 }

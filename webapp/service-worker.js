@@ -67,7 +67,8 @@ self.addEventListener("fetch", (event) => {
 
     if (request.method !== "GET") return;
     if (url.protocol !== "http:" && url.protocol !== "https:") return;
-    if (url.origin !== self.location.origin) return;
+    const CDN_ORIGIN = "https://ui5.sap.com";
+    if (url.origin !== self.location.origin && url.origin !== CDN_ORIGIN) return;
 
     
     if (url.searchParams.has("_probe")) {
@@ -143,7 +144,7 @@ async function cacheFirst(request) {
 
     try {
         const response = await fetch(request);
-        if (response && response.ok && response.type === "basic") {
+        if (response && response.ok && (response.type === "basic" || response.type === "cors")) {
             const cache = await caches.open(CACHE_NAME);
             cache.put(request, response.clone());
         }

@@ -31,8 +31,17 @@ sap.ui.define([
 
             this._fnOnline  = this._onNetworkEvent.bind(this, "online");
             this._fnOffline = this._onNetworkEvent.bind(this, "offline");
-            window.addEventListener("online",  this._fnOnline);
-            window.addEventListener("offline", this._fnOffline);
+
+            const CapNet = window.Capacitor?.isNative && window.Capacitor?.Plugins?.Network;
+            if (CapNet) {
+                CapNet.addListener("networkStatusChange", (status) => {
+                    if (status.connected) { this._fnOnline(); }
+                    else                  { this._fnOffline(); }
+                }).then((handle) => { this._capNetListener = handle; });
+            } else {
+                window.addEventListener("online",  this._fnOnline);
+                window.addEventListener("offline", this._fnOffline);
+            }
 
             // UI iniziale
             this._setNetworkUIState("checking");
@@ -46,8 +55,13 @@ sap.ui.define([
         },
 
         onExit() {
-            window.removeEventListener("online",  this._fnOnline);
-            window.removeEventListener("offline", this._fnOffline);
+            if (this._capNetListener) {
+                this._capNetListener.remove();
+                this._capNetListener = null;
+            } else {
+                window.removeEventListener("online",  this._fnOnline);
+                window.removeEventListener("offline", this._fnOffline);
+            }
             if (this._db) {
                 this._db.close();
                 this._db = null;
@@ -56,6 +70,13 @@ sap.ui.define([
 
         
         _probeConnectivity() {
+
+            const CapNet = window.Capacitor?.isNative && window.Capacitor?.Plugins?.Network;
+            if (CapNet) {
+                return CapNet.getStatus().then((status) => {
+                    this._setOnlineState(status.connected);
+                });
+            }
 
             if (navigator.onLine === false) {
                 this._setOnlineState(false);

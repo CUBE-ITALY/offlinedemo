@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Demo Offline Ordini</string>
+    <string name="title_activity_main">Demo Offline Ordini</string>
+    <string name="package_name">com.example.offlinedemo</string>
+    <string name="custom_url_scheme">com.example.offlinedemo</string>
+</resources>
