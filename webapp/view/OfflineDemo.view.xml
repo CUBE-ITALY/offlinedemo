@@ -3,7 +3,8 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
     xmlns:l="sap.ui.layout"
-    xmlns:f="sap.ui.layout.form">
+    xmlns:f="sap.ui.layout.form"
+    xmlns:sig="offlinedemo.control">
 
     <Page id="page" title="Demo Ordini Offline" showNavButton="false">
 
@@ -47,6 +48,13 @@
                                 <Label id="labelNotes" text="Note"/>
                                 <TextArea id="inputNotes" rows="3" placeholder="Informazioni aggiuntive"/>
                             </f:content>
+                            <VBox id="signatureBlock" class="sapUiSmallMarginTop">
+                            <Label id="labelSignature" text="Firma (test)" class="sapUiTinyMarginBottom"/>
+                            <sig:SignaturePad id="sigPad" height="240" change=".onSigChange"/>
+                            <HBox id="signatureActions" class="sapUiSmallMarginTop">
+                                <Button id="canvasClean" text="Pulisci" press=".onSigClear"/>
+                            </HBox>
+                        </VBox>
                         </f:SimpleForm>
                     </content>
                 </Panel>

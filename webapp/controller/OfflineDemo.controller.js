@@ -169,13 +169,15 @@ sap.ui.define([
 
             // Probe connessione di test prima di inserimenti
             this._probeConnectivity().then(() => {
+                const oSigPad = this.byId("sigPad");
                 const oOrder = {
                     orderId:   sOrderId,
                     recipient: sRecipient,
                     address:   sAddress,
                     notes:     sNotes,
                     timestamp: new Date().toISOString(),
-                    status:    this._bOnline ? STATUS.SENT.key : STATUS.PENDING.key
+                    status:    this._bOnline ? STATUS.SENT.key : STATUS.PENDING.key,
+                    signature: oSigPad.isEmpty() ? null : oSigPad.getSignatureBundle()
                 };
 
                 this._addToDB(oOrder).then(() => {
@@ -315,6 +317,15 @@ sap.ui.define([
             this.byId("inputRecipient").setValue("");
             this.byId("inputAddress").setValue("");
             this.byId("inputNotes").setValue("");
+            this.byId("sigPad").clear();
+        },
+
+        onSigClear() {
+            this.byId("sigPad").clear();
+        },
+
+        onSigChange() {
+            // Firma raccolta automaticamente al submit — nessuna azione immediata
         },
 
         _refreshQueueUI(aOrders) {

@@ -1,5 +1,7 @@
-/* offlinedemo - custom styles */
-
-/* Placeholder per eventuali override.
-   Lasciare anche solo questo commento è sufficiente a evitare il 404
-   sulla risorsa css dichiarata in manifest.json. */
+.offlinedemoSignaturePad {
+    border: 1px dashed var(--sapField_BorderColor, #b3b3b3);
+    border-radius: 6px;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}

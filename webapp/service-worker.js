@@ -71,8 +71,7 @@ self.addEventListener("fetch", (event) => {
 
     if (request.method !== "GET") return;
     if (url.protocol !== "http:" && url.protocol !== "https:") return;
-    const CDN_ORIGIN = "https://ui5.sap.com";
-    if (url.origin !== self.location.origin && url.origin !== CDN_ORIGIN) return;
+    if (url.origin !== self.location.origin) return;
 
     
     if (url.searchParams.has("_probe")) {
