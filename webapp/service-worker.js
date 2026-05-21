@@ -20,7 +20,11 @@ const APP_PRE_CACHE = [
     "./view/OfflineDemo.view.xml",
     "./model/models.js",
     "./i18n/i18n.properties",
-    "./css/style.css"
+    "./css/style.css",
+    // suoni sorgente per notifica audio
+    "./media/sounds/Chord2.wav",
+    "./media/sounds/Chord2_Rev.wav",
+    "./media/sounds/Cloud.wav"
 ];
 
 function toRelative(path) {
@@ -39,7 +43,7 @@ self.addEventListener("install", (event) => {
             await Promise.all(
                 PRE_CACHE.map((url) =>
                     cache.add(url).catch((err) => {
-                        console.warn("[SW] pre-cache fallito per", url, err.message);
+                        console.error("[SW] pre-cache FALLITO per", url, err.message);
                     })
                 )
             );
@@ -89,6 +93,13 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
+    if (url.pathname.endsWith(".wav") ||
+        url.pathname.endsWith(".mp3") ||
+        url.pathname.endsWith(".ogg")) {
+        event.respondWith(cacheFirst(new Request(event.request.url)));
+        return;
+    }
+
     if (isAppAsset(url.pathname)) {
         event.respondWith(cacheFirst(request));
         return;
@@ -108,7 +119,9 @@ function isAppAsset(pathname) {
         pathname.endsWith("/models.js") ||
         pathname.endsWith("/i18n.properties") ||
         pathname.endsWith("/style.css") ||
-        pathname.endsWith("/sw-ui5-manifest.js")
+        pathname.endsWith("/sw-ui5-manifest.js") ||
+        // inclusione formato audio
+        pathname.endsWith(".wav")
     );
 }
 
@@ -139,14 +152,28 @@ async function navigationHandler(request) {
 }
 
 async function cacheFirst(request) {
-    const cached = await caches.match(request, { ignoreSearch: true });
-    if (cached) return cached;
+    // Per richieste audio con Range header, cerca la risposta completa
+    // e costruisci una risposta parziale manualmente
+    const isRange = request.headers.has("Range");
+    const cacheKey = isRange ? new Request(request.url) : request;
+
+    const cached = await caches.match(cacheKey, { ignoreSearch: true });
+
+    if (cached) {
+        if (isRange) {
+            // Restituisci l'intero body come 200: i browser accettano
+            // una risposta 200 anche quando si aspettano una 206
+            return cached;
+        }
+        return cached;
+    }
 
     try {
         const response = await fetch(request);
         if (response && response.ok && (response.type === "basic" || response.type === "cors")) {
             const cache = await caches.open(CACHE_NAME);
-            cache.put(request, response.clone());
+            // Salva sempre la risposta completa (non la range response)
+            cache.put(new Request(request.url), response.clone());
         }
         return response;
     } catch (err) {

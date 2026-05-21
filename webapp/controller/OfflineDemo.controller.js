@@ -46,6 +46,8 @@ sap.ui.define([
             // UI iniziale
             this._setNetworkUIState("checking");
 
+            this._initAudio();
+
             this._initDB()
                 .then(() => this._reloadFromDB())
                 .then(() => this._probeConnectivity())
@@ -65,6 +67,10 @@ sap.ui.define([
             if (this._db) {
                 this._db.close();
                 this._db = null;
+            }
+            if (this._oAudioCtx) {
+                this._oAudioCtx.close();
+                this._oAudioCtx = null;
             }
         },
 
@@ -180,8 +186,10 @@ sap.ui.define([
 
                     if (this._bOnline) {
                         MessageToast.show("Ordine " + oOrder.orderId + " registrato");
+                        this._playNotification("sent"); // trigger notifica
                     } else {
                         MessageToast.show("Ordine salvato localmente — verrà sincronizzato al rientro");
+                        this._playNotification("pending"); // trigger notifica
                     }
                 }).catch((err) => {
                     if (err.name === "ConstraintError" || /constraint/i.test(err.message)) {
@@ -234,6 +242,7 @@ sap.ui.define([
                                 );
                             } else {
                                 MessageToast.show(aOk.length + " ordini sincronizzati");
+                                this._playNotification("synced"); // trigger notifica
                             }
                         });
                     });
@@ -437,7 +446,63 @@ sap.ui.define([
                 req.onsuccess = () => resolve();
                 req.onerror   = (e) => reject(new Error(e.target.error));
             });
-        }
+        },
+
+        // AUDIO PLAYBACK
+        _initAudio() {
+            this._mAudioBuffers = {};
+            this._mSoundPaths = {
+                sent:    "offlinedemo/media/sounds/Chord2.wav",
+                pending: "offlinedemo/media/sounds/Cloud.wav",
+                synced:  "offlinedemo/media/sounds/Chord2_Rev.wav",
+                error:   "offlinedemo/media/sounds/Chord2.wav"
+            };
+
+            try {
+                this._oAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.warn("[Audio] AudioContext non supportato:", e.message);
+                return;
+            }
+
+            const ctx = this._oAudioCtx;
+            const buffers = this._mAudioBuffers;
+            const loaded = new Set();
+
+            Object.values(this._mSoundPaths).forEach(sPath => {
+                if (loaded.has(sPath)) return;
+                loaded.add(sPath);
+
+                fetch(sap.ui.require.toUrl(sPath))
+                    .then(r => r.arrayBuffer())
+                    .then(ab => ctx.decodeAudioData(ab))
+                    .then(buffer => { buffers[sPath] = buffer; })
+                    .catch(err => console.warn("[Audio] Pre-load fallito:", sPath, err.message));
+            });
+        },
+
+        async _playNotification(sAlertType) {
+            const sPath = this._mSoundPaths?.[sAlertType];
+            if (!sPath || !this._oAudioCtx) return;
+
+            const buffer = this._mAudioBuffers[sPath];
+            if (!buffer) {
+                console.warn("[Audio] Buffer non ancora disponibile:", sAlertType);
+                return;
+            }
+
+            try {
+                if (this._oAudioCtx.state === "suspended") {
+                    await this._oAudioCtx.resume();
+                }
+                const source = this._oAudioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(this._oAudioCtx.destination);
+                source.start(0);
+            } catch (err) {
+                console.warn("[Audio] Riproduzione bloccata:", err.message);
+            }
+        },
 
     });
 });
