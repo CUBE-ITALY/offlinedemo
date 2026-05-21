@@ -61,8 +61,9 @@ sap.ui.define([
             this._canvas = oCanvas;
             this._ctx    = oCanvas.getContext("2d");
 
-            this._resize();
-            this._redraw();
+            // Il layout SAP non è ancora stabile in onAfterRendering: defer sizing
+            // per leggere getBoundingClientRect() dopo il primo paint.
+            requestAnimationFrame(() => { this._resize(); this._redraw(); });
 
             // Eventi puntatore unificati
             oCanvas.addEventListener("pointerdown",   this._onPointerDown.bind(this));
@@ -102,6 +103,14 @@ sap.ui.define([
 
         _onPointerDown(e) {
             if (this._activePtrId !== null) return; // un dito alla volta
+            // Safety net: ricalibra il buffer se le dimensioni CSS sono cambiate
+            // (es. layout SAP non ancora stabile al momento di onAfterRendering).
+            const _r = this._canvas.getBoundingClientRect();
+            if (this._canvas.width  !== Math.round(_r.width  * this._dpr) ||
+                this._canvas.height !== Math.round(_r.height * this._dpr)) {
+                this._resize();
+                this._redraw();
+            }
             e.preventDefault();
             this._canvas.setPointerCapture(e.pointerId);
             this._activePtrId = e.pointerId;

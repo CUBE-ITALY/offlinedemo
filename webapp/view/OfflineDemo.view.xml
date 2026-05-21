@@ -52,10 +52,7 @@
                             <Label id="labelSignature" text="Firma (test)" class="sapUiTinyMarginBottom"/>
                             <sig:SignaturePad id="sigPad" height="240" change=".onSigChange"/>
                             <HBox id="signatureActions" class="sapUiSmallMarginTop">
-                                <Button id="canvasClean"   text="Pulisci"  press=".onSigClear"/>
-                                <Button id="canvasConfirm" text="Conferma" type="Emphasized"
-                                        press=".onSigConfirm"
-                                        class="sapUiTinyMarginBegin"/>
+                                <Button id="canvasClean" text="Pulisci" press=".onSigClear"/>
                             </HBox>
                         </VBox>
                         </f:SimpleForm>
