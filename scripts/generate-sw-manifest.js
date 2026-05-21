@@ -13,7 +13,8 @@ const path = require('path');
 const ROOT          = path.join(__dirname, '..');
 const DIST_DIR      = path.join(ROOT, 'dist');
 const RESOURCES_DIR = path.join(DIST_DIR, 'resources');
-const YAML_PATH     = path.join(ROOT, 'ui5-local.yaml');
+const yamlArg       = process.argv.find(a => a.startsWith('--yaml='));
+const YAML_PATH     = yamlArg ? path.join(ROOT, yamlArg.split('=')[1]) : path.join(ROOT, 'ui5-local.yaml');
 const WEBAPP_OUT    = path.join(ROOT, 'webapp', 'sw-ui5-manifest.js');
 const DIST_OUT      = path.join(DIST_DIR, 'sw-ui5-manifest.js');
 

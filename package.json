@@ -32,7 +32,7 @@
     "int-test": "fiori run --open \"test/integration/opaTests.qunit.html\"",
     "start-variants-management": "fiori run --open \"/preview.html#app-preview\"",
     "unit-test": "fiori run --open \"test/unit/unitTests.qunit.html\"",
-    "build-webnative": "ui5 build --config=ui5-local.yaml --all --clean-dest --dest dist && node scripts/generate-sw-manifest.js",
+    "build-webnative": "ui5 build --config=ui5-native.yaml --all --clean-dest --dest dist && node scripts/generate-sw-manifest.js --yaml=ui5-native.yaml",
     "build-webnative-cdn": "ui5 build --config=ui5.yaml --clean-dest --dest dist && node scripts/generate-sw-manifest.js --cdn"
   },
   "sapuxLayer": "CUSTOMER_BASE"
