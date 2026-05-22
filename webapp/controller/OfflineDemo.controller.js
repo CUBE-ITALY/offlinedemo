@@ -88,7 +88,6 @@ sap.ui.define([
                 this._setOnlineState(false);
                 return Promise.resolve();
             }
-
            
             const sUrl = sap.ui.require.toUrl("offlinedemo/manifest.json") + "?_probe=" + Date.now();
 
