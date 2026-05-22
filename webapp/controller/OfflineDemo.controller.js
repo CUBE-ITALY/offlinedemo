@@ -253,6 +253,61 @@ sap.ui.define([
             });
         },
 
+        // TEST CONNESSIONE SAP — richiede VPN attiva
+        // Dev server: URL relativo → proxy ui5.yaml gestisce CORS
+        // Capacitor Android: URL assoluto → fetch nativo bypassa CORS
+        onTestSapConnection() {
+            const oStatus = this.byId("sapTestStatus");
+            oStatus.setText("Verifica...");
+            oStatus.setState("Information");
+            oStatus.setIcon("sap-icon://synchronize");
+
+            const sBase = window.Capacitor?.isNative
+                ? "https://vhlmxl4dci.sap.lasmobili.it:44300"
+                : "";
+            const sUrl  = sBase + "/sap/opu/odata/sap/ZCU_DELIVERY_CONTROL_SRV/probeSet?$format=json";
+            const sAuth = "Basic " + btoa("CUBE_ABAP:Tortoreto2025@@");
+            const ctrl  = new AbortController();
+            const tid   = setTimeout(() => ctrl.abort(), 8000);
+
+            fetch(sUrl, {
+                method: "GET",
+                headers: { "Authorization": sAuth },
+                cache: "no-store",
+                signal: ctrl.signal
+            }).then((res) => {
+                clearTimeout(tid);
+                console.log("[SAP Test] status:", res.status, "url:", sUrl);
+                return res.text().then((sBody) => {
+                    console.log("[SAP Test] body preview:", sBody.substring(0, 200));
+                    if (!res.ok) {
+                        oStatus.setText("HTTP " + res.status + (res.statusText ? " " + res.statusText : ""));
+                        oStatus.setState("Error");
+                        oStatus.setIcon("sap-icon://error");
+                        return;
+                    }
+                    try {
+                        const data   = JSON.parse(sBody);
+                        const bCheck = data?.d?.results?.[0]?.checkConnection;
+                        oStatus.setText("SAP OK — checkConnection: " + bCheck);
+                        oStatus.setState("Success");
+                        oStatus.setIcon("sap-icon://accept");
+                    } catch (e) {
+                        // SAP ha risposto con HTML — probabile redirect al login
+                        oStatus.setText("HTTP " + res.status + " — risposta non JSON (redirect login?)");
+                        oStatus.setState("Warning");
+                        oStatus.setIcon("sap-icon://warning");
+                    }
+                });
+            }).catch((err) => {
+                clearTimeout(tid);
+                const sMsg = err.name === "AbortError" ? "Timeout (8s)" : err.message;
+                oStatus.setText("Connessione fallita: " + sMsg);
+                oStatus.setState("Error");
+                oStatus.setIcon("sap-icon://disconnected");
+            });
+        },
+
         _sendOrderToBackend(oOrder) {
             return new Promise((resolve) => {
                 setTimeout(() => resolve(oOrder), 300);

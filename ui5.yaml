@@ -9,12 +9,15 @@ server:
     - name: fiori-tools-proxy
       afterMiddleware: compression
       configuration:
-        ignoreCertErrors: false # If set to true, certificate errors will be ignored. E.g. self-signed certificates will be accepted
+        ignoreCertErrors: true # SAP usa certificato interno — necessario su alcuni ambienti VPN
         ui5:
           path:
             - /resources
             - /test-resources
           url: https://ui5.sap.com
+        backend:
+          - path: /sap
+            url: https://vhlmxl4dci.sap.lasmobili.it:44300
     - name: fiori-tools-appreload
       afterMiddleware: compression
       configuration:

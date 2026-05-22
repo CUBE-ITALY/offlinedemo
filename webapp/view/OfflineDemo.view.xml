@@ -26,6 +26,24 @@
         <content>
             <VBox id="mainVBox" class="sapUiMediumMargin">
 
+                <Panel id="panelSapTest" headerText="Test Connessione SAP Backend" expandable="true" expanded="true">
+                    <content>
+                        <HBox id="sapTestBox" class="sapUiSmallMargin" alignItems="Center">
+                            <Button
+                                id="btnTestSap"
+                                text="Testa connessione SAP"
+                                type="Default"
+                                icon="sap-icon://connected"
+                                press="onTestSapConnection"/>
+                            <ObjectStatus
+                                id="sapTestStatus"
+                                text="—"
+                                state="None"
+                                class="sapUiSmallMarginBegin"/>
+                        </HBox>
+                    </content>
+                </Panel>
+
                 <Panel id="panelForm" headerText="Inserimento Ordine" expandable="false">
                     <content>
                         <f:SimpleForm
