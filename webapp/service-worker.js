@@ -71,6 +71,7 @@ self.addEventListener("fetch", (event) => {
 
     if (request.method !== "GET") return;
     if (url.protocol !== "http:" && url.protocol !== "https:") return;
+    if (url.hostname.endsWith("sap.lasmobili.it")) return;
     if (url.origin !== self.location.origin) return;
 
     

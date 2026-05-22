@@ -279,7 +279,7 @@ sap.ui.define([
                 clearTimeout(tid);
                 console.log("[SAP Test] status:", res.status, "url:", sUrl);
                 return res.text().then((sBody) => {
-                    console.log("[SAP Test] body preview:", sBody.substring(0, 200));
+                    console.log("[SAP Test] body preview:", sBody.substring(0, 2000));
                     if (!res.ok) {
                         oStatus.setText("HTTP " + res.status + (res.statusText ? " " + res.statusText : ""));
                         oStatus.setState("Error");
@@ -293,8 +293,14 @@ sap.ui.define([
                         oStatus.setState("Success");
                         oStatus.setIcon("sap-icon://accept");
                     } catch (e) {
-                        // SAP ha risposto con HTML — probabile redirect al login
-                        oStatus.setText("HTTP " + res.status + " — risposta non JSON (redirect login?)");
+                        const sType    = res.headers.get("content-type") || "n/d";
+                        const sPreview = sBody.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 120);
+                        oStatus.setText(
+                            "HTTP " + res.status + " — risposta non JSON\n" +
+                            "Tipo: " + sType + "\n" +
+                            "VPN: verificare connessione VPN sul dispositivo\n" +
+                            "Body: " + sPreview
+                        );
                         oStatus.setState("Warning");
                         oStatus.setIcon("sap-icon://warning");
                     }
