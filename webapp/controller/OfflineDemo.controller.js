@@ -259,22 +259,92 @@ sap.ui.define([
         },
 
         // TEST CONNESSIONE SAP — richiede VPN attiva
-        // Dev server: URL relativo → proxy ui5.yaml gestisce CORS
-        // Capacitor Android: URL assoluto → fetch nativo bypassa CORS
+        // Dev server: URL relativo → proxy ui5.yaml gestisce CORS (server-to-server, no WebView)
+        // Capacitor Android: CapacitorHttp bypassa CORS del WebView (preflight OPTIONS bloccata da SAP)
         onTestSapConnection() {
             const oStatus = this.byId("sapTestStatus");
             oStatus.setText("Verifica...");
             oStatus.setState("Information");
             oStatus.setIcon("sap-icon://synchronize");
 
-            const sBase = window.Capacitor?.isNativePlatform?.() === true
-                ? "https://vhlmxl4dci.sap.lasmobili.it:44300"
-                : "";
+            const isNative = window.Capacitor?.isNativePlatform?.() === true;
+            const sBase = isNative ? "https://vhlmxl4dci.sap.lasmobili.it:44300" : "";
             const sUrl  = sBase + "/sap/opu/odata/sap/ZCU_DELIVERY_CONTROL_SRV/probeSet?$format=json";
             const sAuth = "Basic " + btoa("CUBE_ABAP:Tortoreto2025@@");
-            const ctrl  = new AbortController();
-            const tid   = setTimeout(() => ctrl.abort(), 8000);
 
+            const _handleOk = (status, contentType, body) => {
+                if (!String(status).startsWith("2")) {
+                    oStatus.setText("HTTP " + status);
+                    oStatus.setState("Error");
+                    oStatus.setIcon("sap-icon://error");
+                    return;
+                }
+                if ((contentType || "").includes("text/html")) {
+                    oStatus.setText("Proxy non raggiungibile — verificare connessione VPN");
+                    oStatus.setState("Error");
+                    oStatus.setIcon("sap-icon://disconnected");
+                    return;
+                }
+                try {
+                    const data   = typeof body === "string" ? JSON.parse(body) : body;
+                    const bCheck = data?.d?.results?.[0]?.checkConnection;
+                    oStatus.setText("SAP OK — checkConnection: " + bCheck);
+                    oStatus.setState("Success");
+                    oStatus.setIcon("sap-icon://accept");
+                } catch (e) {
+                    const sPreview = String(body).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 120);
+                    oStatus.setText("HTTP " + status + " — risposta non JSON\nBody: " + sPreview);
+                    oStatus.setState("Warning");
+                    oStatus.setIcon("sap-icon://warning");
+                }
+            };
+
+            const _handleErr = (err) => {
+                console.error("[SAP Test] ERRORE —", {
+                    name: err?.name,
+                    message: err?.message,
+                    code: err?.code,
+                    full: JSON.stringify(err)
+                });
+                const sMsg = err?.message || String(err);
+                oStatus.setText("Connessione fallita: " + sMsg);
+                oStatus.setState("Error");
+                oStatus.setIcon("sap-icon://disconnected");
+            };
+
+            // Native: CapacitorHttp usa lo stack HTTP nativo Android, bypassando il WebView e CORS
+            const CapHttp = isNative && window.Capacitor?.Plugins?.CapacitorHttp;
+            console.log("[SAP Test] isNative:", isNative, "| CapacitorHttp disponibile:", !!CapHttp, "| URL:", sUrl);
+
+            if (CapHttp) {
+                console.log("[SAP Test] → invio tramite CapacitorHttp");
+                CapHttp.request({
+                    method: "GET",
+                    url: sUrl,
+                    headers: { "Authorization": sAuth },
+                    connectTimeout: 8000,
+                    readTimeout: 8000
+                }).then((res) => {
+                    console.log("[SAP Test] CapacitorHttp risposta completa:", JSON.stringify(res));
+                    const sContentType = res.headers?.["content-type"] || res.headers?.["Content-Type"] || "";
+                    const body = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+                    console.log("[SAP Test] status:", res.status, "| content-type:", sContentType);
+                    console.log("[SAP Test] body (2000 char):", body.substring(0, 2000));
+                    _handleOk(res.status, sContentType, res.data);
+                }).catch((err) => {
+                    console.error("[SAP Test] CapacitorHttp.request() ha rigettato:", err);
+                    _handleErr(err);
+                });
+                return;
+            }
+
+            // Web/dev: fetch con proxy UI5 — CORS non si applica (URL relativo, server-to-server)
+            console.log("[SAP Test] → invio tramite fetch (web/dev)");
+            const ctrl = new AbortController();
+            const tid  = setTimeout(() => {
+                console.warn("[SAP Test] AbortController scattato dopo 8s — timeout");
+                ctrl.abort();
+            }, 8000);
             fetch(sUrl, {
                 method: "GET",
                 headers: { "Authorization": sAuth },
@@ -282,48 +352,16 @@ sap.ui.define([
                 signal: ctrl.signal
             }).then((res) => {
                 clearTimeout(tid);
-                console.log("[SAP Test] status:", res.status, "url:", sUrl);
+                console.log("[SAP Test] fetch status:", res.status, "url:", sUrl);
                 return res.text().then((sBody) => {
-                    console.log("[SAP Test] body preview:", sBody.substring(0, 2000));
-                    if (!res.ok) {
-                        oStatus.setText("HTTP " + res.status + (res.statusText ? " " + res.statusText : ""));
-                        oStatus.setState("Error");
-                        oStatus.setIcon("sap-icon://error");
-                        return;
-                    }
-                    const sType = res.headers.get("content-type") || "";
-                    if (sType.includes("text/html")) {
-                        // Il proxy ha restituito l'SPA (index.html) invece del backend SAP.
-                        // Causa tipica: VPN non attiva o backend non raggiungibile in modalità web.
-                        oStatus.setText("Proxy non raggiungibile — verificare connessione VPN");
-                        oStatus.setState("Error");
-                        oStatus.setIcon("sap-icon://disconnected");
-                        return;
-                    }
-                    try {
-                        const data   = JSON.parse(sBody);
-                        const bCheck = data?.d?.results?.[0]?.checkConnection;
-                        oStatus.setText("SAP OK — checkConnection: " + bCheck);
-                        oStatus.setState("Success");
-                        oStatus.setIcon("sap-icon://accept");
-                    } catch (e) {
-                        const sPreview = sBody.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 120);
-                        oStatus.setText(
-                            "HTTP " + res.status + " — risposta non JSON\n" +
-                            "Tipo: " + sType + "\n" +
-                            "VPN: verificare connessione VPN sul dispositivo\n" +
-                            "Body: " + sPreview
-                        );
-                        oStatus.setState("Warning");
-                        oStatus.setIcon("sap-icon://warning");
-                    }
+                    console.log("[SAP Test] body (2000 char):", sBody.substring(0, 2000));
+                    _handleOk(res.status, res.headers.get("content-type"), sBody);
                 });
             }).catch((err) => {
                 clearTimeout(tid);
+                console.error("[SAP Test] fetch catch —", { name: err.name, message: err.message, full: String(err) });
                 const sMsg = err.name === "AbortError" ? "Timeout (8s)" : err.message;
-                oStatus.setText("Connessione fallita: " + sMsg);
-                oStatus.setState("Error");
-                oStatus.setIcon("sap-icon://disconnected");
+                _handleErr({ message: sMsg });
             });
         },
 
