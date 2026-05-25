@@ -32,12 +32,13 @@ sap.ui.define([
             this._fnOnline  = this._onNetworkEvent.bind(this, "online");
             this._fnOffline = this._onNetworkEvent.bind(this, "offline");
 
-            const CapNet = window.Capacitor?.isNative && window.Capacitor?.Plugins?.Network;
+            const CapNet = window.Capacitor?.isNativePlatform?.() === true && window.Capacitor?.Plugins?.Network;
             if (CapNet) {
                 CapNet.addListener("networkStatusChange", (status) => {
                     if (status.connected) { this._fnOnline(); }
                     else                  { this._fnOffline(); }
-                }).then((handle) => { this._capNetListener = handle; });
+                });
+                this._capNetListener = CapNet;
             } else {
                 window.addEventListener("online",  this._fnOnline);
                 window.addEventListener("offline", this._fnOffline);
@@ -58,7 +59,11 @@ sap.ui.define([
 
         onExit() {
             if (this._capNetListener) {
-                this._capNetListener.remove();
+                if (typeof this._capNetListener.removeAllListeners === "function") {
+                    this._capNetListener.removeAllListeners();
+                } else if (typeof this._capNetListener.remove === "function") {
+                    this._capNetListener.remove();
+                }
                 this._capNetListener = null;
             } else {
                 window.removeEventListener("online",  this._fnOnline);
@@ -77,7 +82,7 @@ sap.ui.define([
         
         _probeConnectivity() {
 
-            const CapNet = window.Capacitor?.isNative && window.Capacitor?.Plugins?.Network;
+            const CapNet = window.Capacitor?.isNativePlatform?.() === true && window.Capacitor?.Plugins?.Network;
             if (CapNet) {
                 return CapNet.getStatus().then((status) => {
                     this._setOnlineState(status.connected);
@@ -262,7 +267,7 @@ sap.ui.define([
             oStatus.setState("Information");
             oStatus.setIcon("sap-icon://synchronize");
 
-            const sBase = window.Capacitor?.isNative
+            const sBase = window.Capacitor?.isNativePlatform?.() === true
                 ? "https://vhlmxl4dci.sap.lasmobili.it:44300"
                 : "";
             const sUrl  = sBase + "/sap/opu/odata/sap/ZCU_DELIVERY_CONTROL_SRV/probeSet?$format=json";
@@ -286,6 +291,15 @@ sap.ui.define([
                         oStatus.setIcon("sap-icon://error");
                         return;
                     }
+                    const sType = res.headers.get("content-type") || "";
+                    if (sType.includes("text/html")) {
+                        // Il proxy ha restituito l'SPA (index.html) invece del backend SAP.
+                        // Causa tipica: VPN non attiva o backend non raggiungibile in modalità web.
+                        oStatus.setText("Proxy non raggiungibile — verificare connessione VPN");
+                        oStatus.setState("Error");
+                        oStatus.setIcon("sap-icon://disconnected");
+                        return;
+                    }
                     try {
                         const data   = JSON.parse(sBody);
                         const bCheck = data?.d?.results?.[0]?.checkConnection;
@@ -293,7 +307,6 @@ sap.ui.define([
                         oStatus.setState("Success");
                         oStatus.setIcon("sap-icon://accept");
                     } catch (e) {
-                        const sType    = res.headers.get("content-type") || "n/d";
                         const sPreview = sBody.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 120);
                         oStatus.setText(
                             "HTTP " + res.status + " — risposta non JSON\n" +
@@ -351,6 +364,7 @@ sap.ui.define([
 
         // RICARICA STATO
         _reloadFromDB() {
+            if (!this._db) return Promise.resolve();
             return this._getAllFromDB().then((aOrders) => {
                 aOrders.sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
                 aOrders.forEach((o) => this._applyStatusFields(o));

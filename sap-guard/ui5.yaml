@@ -1,0 +1,7 @@
+specVersion: "3.0"
+kind: extension
+type: server-middleware
+metadata:
+  name: sap-guard
+middleware:
+  path: index.js

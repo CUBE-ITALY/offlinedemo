@@ -18,6 +18,9 @@ server:
         backend:
           - path: /sap
             url: https://vhlmxl4dci.sap.lasmobili.it:44300
+    - name: sap-guard
+      afterMiddleware: fiori-tools-proxy
+      configuration: {}
     - name: fiori-tools-appreload
       afterMiddleware: compression
       configuration:
